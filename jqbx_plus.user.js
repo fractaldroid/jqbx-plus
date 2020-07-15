@@ -56,7 +56,6 @@ $(document).ready(function() {
         // Examine the text in the response
         response.json().then(function(data) {
           triggerObj = data;
-          console.log(triggerObj);
         });
       }
     )
@@ -66,6 +65,7 @@ $(document).ready(function() {
 });
 
 // Credit to Rob W for parts of this code, answered on StackOverflow @ https://stackoverflow.com/a/31182643
+// BUG: Currently, if the same !trigger message is sent, it does not send
 (function() {
   var OrigWebSocket = window.WebSocket;
   var callWebSocket = OrigWebSocket.apply.bind(OrigWebSocket);
@@ -86,6 +86,14 @@ $(document).ready(function() {
 
     wsAddListener(ws, 'message', function(event) {
       // TODO: Do something with event.data (received data) if you wish.
+      console.log(event.data);
+      console.log("event data");
+      // TODO: check if it's a push-message
+      /*
+      if($('#chat-messages > div > ul > li:last-child p').innerHTML.endsWith('.mp4')){
+          console.log("IT'S AN MP4 MESSAGE!");
+      }
+      */
     });
     return ws;
   }.bind();
@@ -106,7 +114,7 @@ $(document).ready(function() {
             if (dataObj[1].message.message.substr(0, 1) == "!") {
               var triggerString = dataObj[1].message.message.substr(1);
               if (triggerObj[triggerString]) {
-                dataObj[1].message.message = triggerObj[triggerString];
+                dataObj[1].message.message = "!" + triggerString + " " + triggerObj[triggerString];
               }
               // Reconstruct the Websocket message now
               data = "42" + JSON.stringify(dataObj);
@@ -118,6 +126,9 @@ $(document).ready(function() {
         console.log("Other Websocket shit" + data);
       }
       return wsSend(this, arguments);
+      triggerString = "";
+      dataObj = {};
+      data = null;
     }
   };
 })();
