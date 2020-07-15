@@ -1,5 +1,6 @@
 const fs = require('fs');
 const request = require('request');
+const rp = require('request-promise');
 
 var jqbx_triggers = fs.readFileSync('triggers_dict_sm.json');
 //var triggers_sm = fs.readFileSync('triggers-sm.json');
@@ -17,10 +18,24 @@ Object.size = function(obj) {
 // Get the size of an object
 //var size = Object.size(myObj);
 
-for(item in triggersDict) {
-	var r = request(triggersDict[item], function (e, response) {
-	  console.log(r.uri);
-	  console.log(response.request.uri)
-	});
-	r();
+
+newTriggersDict = {}
+async function buildNewTriggersDict() {
+	// response will evaluate as the resolved value of the promise
+	for (item in triggersDict) {
+		console.log(item);
+		const response = await rp(triggersDict[item]);
+		console.log(response);
+		if (response.request.uri.path == "/removed.png") {
+			constole.log(item + " is removed from Imgur");
+		} else {
+			newTriggersDict[item] = triggersDict[item];
+		}
+	}
 }
+
+// We can't use await outside of async function.
+// We need to use then callbacks ....
+buildNewTriggersDict()
+	.then(() => console.log("newTriggersDict is "))
+	.catch(err => console.log("error"));
