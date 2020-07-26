@@ -35,13 +35,13 @@ function buildNewTriggersDict() {
 		fetch(triggersDict[item])
 		.then(res => {
 			if(res.redirected) {  // https://www.npmjs.com/package/node-fetch#responseredirected
-				console.log("4redirected ", res.url);
+				console.log("302-redirected: ", res.url);
 			} else {
 				newTriggersDict[item] = triggersDict[item];
 				console.log("newTriggersDict is ", newTriggersDict);
 			}
 		})
-		.catch(err => console.error("oops"));
+		.catch(err => console.error("Error, probably not a URL"));
 	}
 }
 // MAIN
