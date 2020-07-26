@@ -1,12 +1,21 @@
 const fs = require('fs');
-const request = require('request');
-const rp = require('request-promise');
+const fetch = require('node-fetch');
 
-var jqbx_triggers = fs.readFileSync('triggers_dict_sm.json');
-//var triggers_sm = fs.readFileSync('triggers-sm.json');
-var triggersDict = JSON.parse(jqbx_triggers);
+//var jqbx_triggers = fs.readFileSync('triggers_dict.json');
+const jqbx_triggers = fs.readFileSync('triggers_dict_sm.json');
+const triggersDict = JSON.parse(jqbx_triggers);
 
-// Helper
+// helpers
+function validURL(str) {
+	var pattern = new RegExp('^(https?:\\/\\/)?'+ // protocol
+	  '((([a-z\\d]([a-z\\d-]*[a-z\\d])*)\\.)+[a-z]{2,}|'+ // domain name
+	  '((\\d{1,3}\\.){3}\\d{1,3}))'+ // OR ip (v4) address
+	  '(\\:\\d+)?(\\/[-a-z\\d%_.~+]*)*'+ // port and path
+	  '(\\?[;&a-z\\d%_.~+=-]*)?'+ // query string
+	  '(\\#[-a-z\\d_]*)?$','i'); // fragment locator
+	return !!pattern.test(str);
+  }
+
 Object.size = function(obj) {
     var size = 0, key;
     for (key in obj) {
@@ -14,28 +23,31 @@ Object.size = function(obj) {
     }
     return size;
 };
-
 // Get the size of an object
 //var size = Object.size(myObj);
 
 
-newTriggersDict = {}
-async function buildNewTriggersDict() {
+var newTriggersDict = {};
+function buildNewTriggersDict() {
 	// response will evaluate as the resolved value of the promise
 	for (item in triggersDict) {
-		console.log(item);
-		const response = await rp(triggersDict[item]);
-		console.log(response);
-		if (response.request.uri.path == "/removed.png") {
-			constole.log(item + " is removed from Imgur");
-		} else {
-			newTriggersDict[item] = triggersDict[item];
-		}
+		//validUrl = validURL(triggersDict[item]);
+		fetch(triggersDict[item])
+		.then(res => {
+			if(res.redirected) {  // https://www.npmjs.com/package/node-fetch#responseredirected
+				console.log("4redirected ", res.url);
+			} else {
+				newTriggersDict[item] = triggersDict[item];
+				console.log("newTriggersDict is ", newTriggersDict);
+			}
+		})
+		.catch(err => console.error("oops"));
 	}
 }
+// MAIN
+buildNewTriggersDict();
 
-// We can't use await outside of async function.
-// We need to use then callbacks ....
-buildNewTriggersDict()
-	.then(() => console.log("newTriggersDict is "))
-	.catch(err => console.log("error"));
+// Write the data to a file
+// let data = JSON.stringify(newTriggersDict);
+// fs.writeFileSync('newTriggers.json', data);
+// console.log("@@ END @@");
