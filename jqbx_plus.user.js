@@ -2,9 +2,9 @@
 // @name            jqbx+
 // @description     Adds missing QoL features to the JQBX website.
 // @author          braincomb, fractaldroid
-// @homepageURL     https://braincomb.com
-// @namespace       https://braincomb.com
-// @version         0.0.1
+// @homepageURL     https://github.com/fractaldroid/jqbx-plus
+// @namespace       https://github.com/fractaldroid/jqbx-plus
+// @version         0.0.2
 // @include         http*://app.jqbx.fm/room/*
 // @require         https://code.jquery.com/jquery-2.1.4.min.js
 // @grant           GM_registerMenuCommand
@@ -89,11 +89,9 @@ $(document).ready(function() {
       console.log(event.data);
       console.log("event data");
       // TODO: check if it's a push-message
-      /*
-      if($('#chat-messages > div > ul > li:last-child p').innerHTML.endsWith('.mp4')){
-          console.log("IT'S AN MP4 MESSAGE!");
-      }
-      */
+
+      // We can probabably add checkAndConvertToEmbed() here
+
     });
     return ws;
   }.bind();
@@ -105,6 +103,7 @@ $(document).ready(function() {
   OrigWebSocket.prototype.send = function(data) {
     // Check if the Websocket Message is a "chat" client-to-server message
     if (data.substr(0, 2) == "42") {
+      checkAndConvertToEmbed();
       // Demoleuculariziation of the data
       var dataObj = JSON.parse(data.substr(2));
       if (dataObj.length > 1) {
@@ -132,3 +131,16 @@ $(document).ready(function() {
     }
   };
 })();
+
+// It goes exactly like this: https://i.imgur.com/LJzLNWO.gif
+var linkHistory = "";
+function checkAndConvertToEmbed() {
+  setTimeout(function() {
+    var linkEl = $('#chat-messages > div > ul > li:last-child p a');
+      if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') !== linkHistory) {
+        var linkValue = linkEl.attr('href');
+        linkHistory = linkValue;
+        $('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4" /></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
+      }
+  }, 150);
+}
