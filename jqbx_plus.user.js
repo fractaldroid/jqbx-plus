@@ -2,7 +2,7 @@
 // @name            jqbx+
 // @description     Adds missing QoL features to the JQBX website.
 // @author          braincomb, fractaldroid
-// @homepageURL     https://app.jqbx.fm/room/psy
+// @homepageURL     https://github.com/fractaldroid/jqbx-plus
 // @namespace       https://github.com/fractaldroid/jqbx-plus
 // @version         0.0.2
 // @include         http*://app.jqbx.fm/room/*
@@ -11,7 +11,7 @@
 // @grant           GM_addStyle
 // ==/UserScript==
 
-/* globals $ */
+/* globals jQuery */
 
 GM_addStyle(`
   .emoji-component {
@@ -29,22 +29,41 @@ GM_addStyle(`
     background: #0d1318;
     cursor: pointer;
     text-transform: uppercase;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: 1px;
     color: #7f9293;
     transition: color .5s,background .5s;
     transform: translateZ(0);
   }
+
+  #gif-search-container {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-color: #0b1015;
+    top: 0;
+    left: 0;
+  }
+
+  #gif-search-input {
+    background-color: black;
+    border-color: #CCC;
+    margin: 10px;
+  }
 `);
+
 var triggerObj = [];
-$(document).ready(function() {
+jQuery(document).ready(function() {
   setTimeout(function() {
-    $("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
+    jQuery("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
+    jQuery('#chat-messages').append('<div id="gif-search-container"><div id="gif-search-input"><input type="text"/></div></div>');
+    handleGifSearch();
   }, 5000);
 
   // Get the Triggers JSON dictionary
-  fetch('https://raw.githubusercontent.com/fractaldroid/jqbx-plus/master/triggers_dict.json', {cache: "no-cache"})
+  fetch('https://raw.githubusercontent.com/fractaldroid/jqbx-plus/master/triggers_dict.json')
     .then(
       function(response) {
         if (response.status !== 200) {
@@ -62,6 +81,13 @@ $(document).ready(function() {
     .catch(function(err) {
       console.log('Fetch Error :-S', err);
     });
+
+    var searchContainerElem= jQuery('<div id="gif-search-container"></div>');
+    function handleGifSearch() {
+      jQuery('#tenor-btn').click(function() {
+        jQuery('#gif-search-container').toggle();
+      })
+    }
 });
 
 // Credit to Rob W for parts of this code, answered on StackOverflow @ https://stackoverflow.com/a/31182643
@@ -86,12 +112,9 @@ $(document).ready(function() {
 
     wsAddListener(ws, 'message', function(event) {
       // TODO: Do something with event.data (received data) if you wish.
-      //console.log(event.data);
-      //console.log("event data");
+      console.log(event.data);
+      console.log("event data");
       // TODO: check if it's a push-message
-
-      // We can probabably add checkAndConvertToEmbed() here
-
     });
     return ws;
   }.bind();
@@ -117,17 +140,16 @@ $(document).ready(function() {
               }
               // Reconstruct the Websocket message now
               data = "42" + JSON.stringify(dataObj);
-              // TODO: Replace MP4s with a GIF if possible
             }
           }
         }
       } else {
         console.log("Other Websocket shit" + data);
       }
+      return wsSend(this, arguments);
       triggerString = "";
       dataObj = {};
       data = null;
-      return wsSend(this, arguments);
     }
   };
 })();
@@ -136,11 +158,11 @@ $(document).ready(function() {
 var linkHistory = "";
 function checkAndConvertToEmbed() {
   setTimeout(function() {
-    var linkEl = $('#chat-messages > div > ul > li:last-child p a');
+    var linkEl = jQuery('#chat-messages > div > ul > li:last-child p a');
       if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') !== linkHistory) {
         var linkValue = linkEl.attr('href');
         linkHistory = linkValue;
-        $('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4" /></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
+        jQuery('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4" /></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
       }
   }, 150);
 }
