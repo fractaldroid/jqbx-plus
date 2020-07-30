@@ -63,7 +63,7 @@ jQuery(document).ready(function() {
   }, 5000);
 
   // Get the Triggers JSON dictionary
-  fetch('https://raw.githubusercontent.com/fractaldroid/jqbx-plus/master/triggers_dict.json')
+  fetch('https://raw.githubusercontent.com/fractaldroid/jqbx-plus/master/triggers_dict.json', {cache: "no-cache"})
     .then(
       function(response) {
         if (response.status !== 200) {
