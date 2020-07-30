@@ -2,16 +2,16 @@
 // @name            jqbx+
 // @description     Adds missing QoL features to the JQBX website.
 // @author          braincomb, fractaldroid
-// @homepageURL     https://app.jqbx.fm/room/psy
+// @homepageURL     https://github.com/fractaldroid/jqbx-plus
 // @namespace       https://github.com/fractaldroid/jqbx-plus
-// @version         0.0.2
+// @version         0.0.3
 // @include         http*://app.jqbx.fm/room/*
 // @require         https://code.jquery.com/jquery-2.1.4.min.js
 // @grant           GM_registerMenuCommand
 // @grant           GM_addStyle
 // ==/UserScript==
 
-/* globals $ */
+/* globals jQuery */
 
 GM_addStyle(`
   .emoji-component {
@@ -29,18 +29,37 @@ GM_addStyle(`
     background: #0d1318;
     cursor: pointer;
     text-transform: uppercase;
-    font-size: 14px;
+    font-size: 16px;
     font-weight: 700;
     letter-spacing: 1px;
     color: #7f9293;
     transition: color .5s,background .5s;
     transform: translateZ(0);
   }
+
+  #gif-search-container {
+    display: none;
+    width: 100%;
+    height: 100%;
+    position: relative;
+    background-color: #0b1015;
+    top: 0;
+    left: 0;
+  }
+
+  #gif-search-input {
+    background-color: black;
+    border-color: #CCC;
+    margin: 10px;
+  }
 `);
+
 var triggerObj = [];
-$(document).ready(function() {
+jQuery(document).ready(function() {
   setTimeout(function() {
-    $("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
+    jQuery("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
+    jQuery('#chat-messages').append('<div id="gif-search-container"><div id="gif-search-input"><input type="text"/></div></div>');
+    handleGifSearch();
   }, 5000);
 
   // Get the Triggers JSON dictionary
@@ -62,11 +81,21 @@ $(document).ready(function() {
     .catch(function(err) {
       console.log('Fetch Error :-S', err);
     });
+
+    var searchContainerElem= jQuery('<div id="gif-search-container"></div>');
+    function handleGifSearch() {
+      jQuery('#tenor-btn').click(function() {
+        jQuery('#gif-search-container').toggle();
+      })
+    }
 });
 
 // Credit to Rob W for parts of this code, answered on StackOverflow @ https://stackoverflow.com/a/31182643
 // BUG: Currently, if the same !trigger message is sent, it does not send
 (function() {
+  Array.prototype.random = function () {
+    return this[Math.floor((Math.random()*this.length))];
+  }
   var OrigWebSocket = window.WebSocket;
   var callWebSocket = OrigWebSocket.apply.bind(OrigWebSocket);
   var wsAddListener = OrigWebSocket.prototype.addEventListener;
@@ -86,12 +115,9 @@ $(document).ready(function() {
 
     wsAddListener(ws, 'message', function(event) {
       // TODO: Do something with event.data (received data) if you wish.
-      //console.log(event.data);
-      //console.log("event data");
+      console.log(event.data);
+      console.log("event data");
       // TODO: check if it's a push-message
-
-      // We can probabably add checkAndConvertToEmbed() here
-
     });
     return ws;
   }.bind();
@@ -113,34 +139,35 @@ $(document).ready(function() {
             if (dataObj[1].message.message.substr(0, 1) == "!") {
               var triggerString = dataObj[1].message.message.substr(1);
               if (triggerObj[triggerString]) {
-                dataObj[1].message.message = "!" + triggerString + " " + triggerObj[triggerString];
+                var invisibleChar = "‎";
+                var magicCacheBuster = invisibleChar.repeat(Math.floor(Math.random() * 20));
+                dataObj[1].message.message = "!" + triggerString + magicCacheBuster + " " + triggerObj[triggerString];
               }
               // Reconstruct the Websocket message now
               data = "42" + JSON.stringify(dataObj);
-              // TODO: Replace MP4s with a GIF if possible
             }
           }
         }
       } else {
         console.log("Other Websocket shit" + data);
       }
+      return wsSend(this, arguments);
       triggerString = "";
       dataObj = {};
       data = null;
-      return wsSend(this, arguments);
     }
   };
 })();
 
 // It goes exactly like this: https://i.imgur.com/LJzLNWO.gif
-var linkHistory = "";
 function checkAndConvertToEmbed() {
   setTimeout(function() {
-    var linkEl = $('#chat-messages > div > ul > li:last-child p a');
-      if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') !== linkHistory) {
+    // Find the last message that contains an a href
+    let linkEl = jQuery('#chat-messages > div > ul > li:last-child p a');
+      // Make sure it's an mp4 href and the parent div doesn't
+      if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') && jQuery('#chat-messages > div > ul > li:last-child p').has('video').length == 0) {
         var linkValue = linkEl.attr('href');
-        linkHistory = linkValue;
-        $('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4" /></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
+        jQuery('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4"/></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
       }
   }, 150);
 }

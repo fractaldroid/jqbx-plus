@@ -1,0 +1,25 @@
+{
+  "name": "jqbx-plus",
+  "version": "1.0.0",
+  "description": "Project to add custom QoL features to JQBX.fm chat",
+  "main": "cleanup_triggers.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/fractaldroid/jqbx-plus.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/fractaldroid/jqbx-plus/issues"
+  },
+  "homepage": "https://github.com/fractaldroid/jqbx-plus#readme",
+  "dependencies": {
+    "node-fetch": "^2.6.0",
+    "request": "^2.88.2",
+    "request-promise": "^4.2.5",
+    "url-exists": "^1.0.3"
+  }
+}
