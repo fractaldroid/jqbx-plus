@@ -140,7 +140,7 @@ jQuery(document).ready(function() {
               var triggerString = dataObj[1].message.message.substr(1);
               if (triggerObj[triggerString]) {
                 var invisibleChar = "‎";
-                var magicCacheBuster = invisibleChar.repeat(Math.floor(Math.random() * 20));
+                var magicCacheBuster = invisibleChar.repeat(Math.floor(Math.random() * 100));
                 dataObj[1].message.message = "!" + triggerString + magicCacheBuster + " " + triggerObj[triggerString];
               }
               // Reconstruct the Websocket message now
