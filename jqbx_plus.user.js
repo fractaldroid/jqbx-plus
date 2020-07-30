@@ -4,7 +4,7 @@
 // @author          braincomb, fractaldroid
 // @homepageURL     https://github.com/fractaldroid/jqbx-plus
 // @namespace       https://github.com/fractaldroid/jqbx-plus
-// @version         0.0.2
+// @version         0.0.3
 // @include         http*://app.jqbx.fm/room/*
 // @require         https://code.jquery.com/jquery-2.1.4.min.js
 // @grant           GM_registerMenuCommand
@@ -93,6 +93,9 @@ jQuery(document).ready(function() {
 // Credit to Rob W for parts of this code, answered on StackOverflow @ https://stackoverflow.com/a/31182643
 // BUG: Currently, if the same !trigger message is sent, it does not send
 (function() {
+  Array.prototype.random = function () {
+    return this[Math.floor((Math.random()*this.length))];
+  }
   var OrigWebSocket = window.WebSocket;
   var callWebSocket = OrigWebSocket.apply.bind(OrigWebSocket);
   var wsAddListener = OrigWebSocket.prototype.addEventListener;
@@ -136,7 +139,9 @@ jQuery(document).ready(function() {
             if (dataObj[1].message.message.substr(0, 1) == "!") {
               var triggerString = dataObj[1].message.message.substr(1);
               if (triggerObj[triggerString]) {
-                dataObj[1].message.message = "!" + triggerString + " " + triggerObj[triggerString];
+                var invisibleChar = "‎";
+                var magicCacheBuster = invisibleChar.repeat(Math.floor(Math.random() * 20));
+                dataObj[1].message.message = "!" + triggerString + magicCacheBuster + " " + triggerObj[triggerString];
               }
               // Reconstruct the Websocket message now
               data = "42" + JSON.stringify(dataObj);
@@ -155,14 +160,14 @@ jQuery(document).ready(function() {
 })();
 
 // It goes exactly like this: https://i.imgur.com/LJzLNWO.gif
-var linkHistory = "";
 function checkAndConvertToEmbed() {
   setTimeout(function() {
-    var linkEl = jQuery('#chat-messages > div > ul > li:last-child p a');
-      if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') !== linkHistory) {
+    // Find the last message that contains an a href
+    let linkEl = jQuery('#chat-messages > div > ul > li:last-child p a');
+      // Make sure it's an mp4 href and the parent div doesn't
+      if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') && jQuery('#chat-messages > div > ul > li:last-child p').has('video').length == 0) {
         var linkValue = linkEl.attr('href');
-        linkHistory = linkValue;
-        jQuery('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4" /></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
+        jQuery('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4"/></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
       }
   }, 150);
 }
