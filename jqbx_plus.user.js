@@ -4,9 +4,13 @@
 // @author          braincomb, fractaldroid
 // @homepageURL     https://github.com/fractaldroid/jqbx-plus
 // @namespace       https://github.com/fractaldroid/jqbx-plus
-// @version         0.0.3
+// @version         0.1.0
 // @include         http*://app.jqbx.fm/room/*
 // @require         https://code.jquery.com/jquery-2.1.4.min.js
+// @require         https://www.gstatic.com/firebasejs/7.17.1/firebase-app.js
+// @require         https://www.gstatic.com/firebasejs/7.17.1/firebase-analytics.js
+// @require         https://www.gstatic.com/firebasejs/7.17.1/firebase-firestore.js
+// @require         https://www.gstatic.com/firebasejs/7.17.1/firebase-auth.js
 // @grant           GM_registerMenuCommand
 // @grant           GM_addStyle
 // ==/UserScript==
@@ -54,48 +58,46 @@ GM_addStyle(`
   }
 `);
 
+const firebaseConfig = {
+  apiKey: "AIzaSyAbtDoQbfpUfXgaf6de2FyZqKIgXndW_Oo",
+  authDomain: "jqbx-plus-triggers.firebaseapp.com",
+  databaseURL: "https://jqbx-plus-triggers.firebaseio.com",
+  projectId: "jqbx-plus-triggers",
+  storageBucket: "jqbx-plus-triggers.appspot.com",
+  messagingSenderId: "296173927183",
+  appId: "1:296173927183:web:bba13c94db965d17881c7a",
+  measurementId: "G-HZBDG2SVM8"
+};
+firebase.initializeApp(firebaseConfig);
+firebase.analytics();
+/*
+  firebase.auth().signInWithEmailAndPassword('poopypants@github.io', '').catch(function (error) {
+    var errorCode = error.code;
+    var errorMessage = error.message;
+  });
+*/
+// Instantiate firestore
+const db = firebase.firestore();
 var triggerObj = [];
-jQuery(document).ready(function() {
-  setTimeout(function() {
+
+jQuery(document).ready(function () {
+  setTimeout(function () {
     jQuery("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
     jQuery('#chat-messages').append('<div id="gif-search-container"><div id="gif-search-input"><input type="text"/></div></div>');
     handleGifSearch();
   }, 5000);
 
-  // Get the Triggers JSON dictionary
-  fetch('https://raw.githubusercontent.com/fractaldroid/jqbx-plus/master/triggers_dict.json', {cache: "no-cache"})
-    .then(
-      function(response) {
-        if (response.status !== 200) {
-          console.log('Looks like there was a problem. Status Code: ' +
-            response.status);
-          return;
-        }
-
-        // Examine the text in the response
-        response.json().then(function(data) {
-          triggerObj = data;
-        });
-      }
-    )
-    .catch(function(err) {
-      console.log('Fetch Error :-S', err);
-    });
-
-    var searchContainerElem= jQuery('<div id="gif-search-container"></div>');
-    function handleGifSearch() {
-      jQuery('#tenor-btn').click(function() {
-        jQuery('#gif-search-container').toggle();
-      })
-    }
+  var searchContainerElem = jQuery('<div id="gif-search-container"></div>');
+  function handleGifSearch() {
+    jQuery('#tenor-btn').click(function () {
+      jQuery('#gif-search-container').toggle();
+    })
+  }
 });
 
-// Credit to Rob W for parts of this code, answered on StackOverflow @ https://stackoverflow.com/a/31182643
-// BUG: Currently, if the same !trigger message is sent, it does not send
-(function() {
-  Array.prototype.random = function () {
-    return this[Math.floor((Math.random()*this.length))];
-  }
+// MAIN
+(function () {
+  // WebSocket monkey patching solution via StackOverflow @ https://stackoverflow.com/a/31182643
   var OrigWebSocket = window.WebSocket;
   var callWebSocket = OrigWebSocket.apply.bind(OrigWebSocket);
   var wsAddListener = OrigWebSocket.prototype.addEventListener;
@@ -113,7 +115,7 @@ jQuery(document).ready(function() {
       ws = new OrigWebSocket();
     }
 
-    wsAddListener(ws, 'message', function(event) {
+    wsAddListener(ws, 'message', function (event) {
       // TODO: Do something with event.data (received data) if you wish.
       console.log(event.data);
       console.log("event data");
@@ -126,48 +128,79 @@ jQuery(document).ready(function() {
 
   var wsSend = OrigWebSocket.prototype.send;
   wsSend = wsSend.apply.bind(wsSend);
-  OrigWebSocket.prototype.send = function(data) {
+
+  // Modify WebSocket client send messages
+  OrigWebSocket.prototype.send = async function (data) {
+    var invisibleChar = "‎";
+    var magicCacheBusterStr = invisibleChar.repeat(Math.floor(Math.random() * 100));
     // Check if the Websocket Message is a "chat" client-to-server message
     if (data.substr(0, 2) == "42") {
+      // Mp4 embedder
       checkAndConvertToEmbed();
       // Demoleuculariziation of the data
       var dataObj = JSON.parse(data.substr(2));
       if (dataObj.length > 1) {
-        if (dataObj[1].hasOwnProperty('message')) {
-          if (dataObj[1].message.hasOwnProperty('message')) {
-            // Check if the message starts with ! as these is a trigger, then check if it exists in the triggers dictionary
-            if (dataObj[1].message.message.substr(0, 1) == "!") {
-              var triggerString = dataObj[1].message.message.substr(1);
-              if (triggerObj[triggerString]) {
-                var invisibleChar = "‎";
-                var magicCacheBuster = invisibleChar.repeat(Math.floor(Math.random() * 100));
-                dataObj[1].message.message = "!" + triggerString + magicCacheBuster + " " + triggerObj[triggerString];
+        // Check if the message starts with ! as these are triggers
+        if (dataObj[1].hasOwnProperty('message') && dataObj[1].message.hasOwnProperty('message') && (dataObj[1].message.message.substr(0, 1) == "!")) {
+          var triggerDocId = dataObj[1].message.message.substr(1);
+          // Check if add/update and the val is more than 3 characters
+          if ((dataObj[1].message.message.split(" ").length > 1) && (triggerDocId.split(" ")[1].length > 3)) {
+            triggerDocId = triggerDocId.split(" ")[0];
+            // Construct the Firebase request data
+            var triggerVal = { "val": dataObj[1].message.message.split(" ")[1] };
+            await db.collection("trigger_col").doc(triggerDocId.split(" ")[0]).set(triggerVal)
+              .then(function (docRef) {
+                var val = triggerVal.val
+                console.log(triggerDocId + " has been set/updated to " + val);
+                dataObj[1].message.message = "updated trigger for !" + triggerDocId;
+                // Construct the WebSocket message now
+                data = "42" + JSON.stringify(dataObj);
+              })
+              .catch(function (error) {
+                console.error("Error adding document: ", error);
+              });
+            // Not add/update, so try to GET the trigger val from Firebase
+          } else if (!(dataObj[1].message.message.split(" ").length > 1)) {
+            // We need to fetch the trigger val from Firebase here so using await
+            await db.collection("trigger_col").doc(triggerDocId).get().then(function (doc) {
+              if (doc.exists) {
+                var val = doc.data().val; // data == {"val":"something"}
+                // Reconstruct message string with url & magic cachebuster
+                dataObj[1].message.message = "!" + triggerDocId + magicCacheBusterStr + " " + val;
+                // Reconstruct the WebSocket message now
+                data = "42" + JSON.stringify(dataObj);
+              } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+                dataObj[1].message.message = "/me wishes there were a trigger for that" + magicCacheBusterStr;
+                data = "42" + JSON.stringify(dataObj);
               }
-              // Reconstruct the Websocket message now
-              data = "42" + JSON.stringify(dataObj);
-            }
+            }).catch(function (error) {
+              console.log("Error getting document:", error);
+            });
           }
         }
-      } else {
-        console.log("Other Websocket shit" + data);
       }
-      return wsSend(this, arguments);
-      triggerString = "";
-      dataObj = {};
-      data = null;
+    } else {
+      //console.log("Other Websocket shit" + data);
     }
+    return wsSend(this, arguments);
+    triggerDocId = "";
+    dataObj = {};
+    data = null;
   };
 })();
 
-// It goes exactly like this: https://i.imgur.com/LJzLNWO.gif
+
 function checkAndConvertToEmbed() {
-  setTimeout(function() {
+  setTimeout(function () {
     // Find the last message that contains an a href
     let linkEl = jQuery('#chat-messages > div > ul > li:last-child p a');
-      // Make sure it's an mp4 href and the parent div doesn't
-      if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') && jQuery('#chat-messages > div > ul > li:last-child p').has('video').length == 0) {
-        var linkValue = linkEl.attr('href');
-        jQuery('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4"/></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
-      }
+    // Make sure it's an mp4 href and the parent div doesn't have a video elem
+    if (linkEl.length > 0 && linkEl.attr('href').endsWith('mp4') && linkEl.attr('href') && jQuery('#chat-messages > div > ul > li:last-child p').has('video').length == 0) {
+      var linkValue = linkEl.attr('href');
+      jQuery('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4"/></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
+    }
   }, 150);
 }
+
