@@ -186,7 +186,7 @@ jQuery(document).ready(function () {
           else if ((dataObj[1].message.message.split(" ").length > 1) && (triggerDocId.split(" ")[1].length > MIN_TRIGGER_LENGTH)) {
             triggerDocId = triggerDocId.split(" ")[0];
             // Construct the Firebase request data
-            var triggerVal = { "val": dataObj[1].message.message.split(" ")[1] };
+            var triggerVal = { "val": dataObj[1].message.message.split(" ").slice(1).join(" ") };;
             await db.collection("trigger_col").doc(triggerDocId.split(" ")[0]).set(triggerVal)
               .then(function (docRef) {
                 var val = triggerVal.val
