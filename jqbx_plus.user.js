@@ -61,7 +61,7 @@ GM_addStyle(`
 const TRIGGER_NOT_FOUND_MESSAGES = [
   "Bless up. trigger not found: ",
   "Oops! Not a trigger: ",
-  "This trigger is single and looking: ",
+  "This trigger is single and looking to mingle: ",
   "/me wishes there was a trigger for: ",
   "I must be thinking of another trigger, not: ",
   "Not a trigger, bro: ",
@@ -249,4 +249,14 @@ function checkAndConvertToEmbed() {
 
 function multiplyByRandom(n) {
   return (n * Math.floor(Math.random() * 10));
+}
+
+function addGlobalStyle(css) {
+    var head, style;
+    head = document.getElementsByTagName('head')[0];
+    if (!head) { return; }
+    style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = css;
+    head.appendChild(style);
 }
