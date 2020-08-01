@@ -58,7 +58,20 @@ GM_addStyle(`
   }
 `);
 
-const firebaseConfig = {
+const TRIGGER_NOT_FOUND_MESSAGES = [
+  "Bless up. trigger not found: ",
+  "Oops! Not a trigger: ",
+  "This trigger is single and looking: ",
+  "/me wishes there was a trigger for: ",
+  "I must be thinking of another trigger, not: ",
+  "Not a trigger, bro: ",
+  "That's not a trigger: ",
+  "I wish it was a trigger too, but it's not: ",
+  "That'd make a good trigger, but it's not one: "
+];
+const INVISIBLE_CHAR = "‎";
+const MIN_TRIGGER_LENGTH = 3;
+const FIRE_BASE_CONFIG = {
   apiKey: "AIzaSyAbtDoQbfpUfXgaf6de2FyZqKIgXndW_Oo",
   authDomain: "jqbx-plus-triggers.firebaseapp.com",
   databaseURL: "https://jqbx-plus-triggers.firebaseio.com",
@@ -68,7 +81,8 @@ const firebaseConfig = {
   appId: "1:296173927183:web:bba13c94db965d17881c7a",
   measurementId: "G-HZBDG2SVM8"
 };
-firebase.initializeApp(firebaseConfig);
+
+firebase.initializeApp(FIRE_BASE_CONFIG);
 firebase.analytics();
 /*
   firebase.auth().signInWithEmailAndPassword('poopypants@github.io', '').catch(function (error) {
@@ -78,8 +92,8 @@ firebase.analytics();
 */
 // Instantiate firestore
 const db = firebase.firestore();
-var triggerObj = [];
 
+// Button stuff
 jQuery(document).ready(function () {
   setTimeout(function () {
     jQuery("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
@@ -131,8 +145,10 @@ jQuery(document).ready(function () {
 
   // Modify WebSocket client send messages
   OrigWebSocket.prototype.send = async function (data) {
-    var invisibleChar = "‎";
-    var magicCacheBusterStr = invisibleChar.repeat(Math.floor(Math.random() * 100));
+    Array.prototype.random = function () {
+      return this[Math.floor((Math.random() * this.length))];
+    }
+    var magicCacheBusterStr = INVISIBLE_CHAR.repeat(Math.floor(Math.random() * 100));
     // Check if the Websocket Message is a "chat" client-to-server message
     if (data.substr(0, 2) == "42") {
       // Mp4 embedder
@@ -143,8 +159,31 @@ jQuery(document).ready(function () {
         // Check if the message starts with ! as these are triggers
         if (dataObj[1].hasOwnProperty('message') && dataObj[1].message.hasOwnProperty('message') && (dataObj[1].message.message.substr(0, 1) == "!")) {
           var triggerDocId = dataObj[1].message.message.substr(1);
-          // Check if add/update and the val is more than 3 characters
-          if ((dataObj[1].message.message.split(" ").length > 1) && (triggerDocId.split(" ")[1].length > 3)) {
+          // Check if delete operation
+          if ((dataObj[1].message.message.split(" ").length > 1) && (triggerDocId.split(" ")[0] == "del")) {
+            console.log("it's a delete");
+            var actualTriggerDocId = triggerDocId.split(" ")[1];
+            await db.collection("trigger_col").doc(actualTriggerDocId).get().then(function (doc) {
+              if (doc.exists) {
+                db.collection("trigger_col").doc(actualTriggerDocId).delete()
+                  .catch(function (error) {
+                    console.log("Error getting document:", error);
+                  });
+                dataObj[1].message.message = "removed trigger: " + actualTriggerDocId;
+                // Reconstruct the WebSocket message now
+                data = "42" + JSON.stringify(dataObj);
+              } else {
+                // doc.data() will be undefined in this case
+                console.log("No such document!");
+                dataObj[1].message.message = TRIGGER_NOT_FOUND_MESSAGES.random() + triggerDocId + magicCacheBusterStr;
+                data = "42" + JSON.stringify(dataObj);
+              }
+            }).catch(function (error) {
+              console.log("Error getting document:", error);
+            });
+          }
+          // Check if add/update and the val is more than MIN_TRIGGER_LENGTH characters
+          else if ((dataObj[1].message.message.split(" ").length > 1) && (triggerDocId.split(" ")[1].length > MIN_TRIGGER_LENGTH)) {
             triggerDocId = triggerDocId.split(" ")[0];
             // Construct the Firebase request data
             var triggerVal = { "val": dataObj[1].message.message.split(" ")[1] };
@@ -172,7 +211,7 @@ jQuery(document).ready(function () {
               } else {
                 // doc.data() will be undefined in this case
                 console.log("No such document!");
-                dataObj[1].message.message = "/me wishes there were a trigger for that" + magicCacheBusterStr;
+                dataObj[1].message.message = TRIGGER_NOT_FOUND_MESSAGES.random() + triggerDocId + magicCacheBusterStr;
                 data = "42" + JSON.stringify(dataObj);
               }
             }).catch(function (error) {
@@ -203,4 +242,3 @@ function checkAndConvertToEmbed() {
     }
   }, 150);
 }
-
