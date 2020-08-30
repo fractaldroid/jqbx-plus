@@ -56,12 +56,18 @@ GM_addStyle(`
     border-color: #CCC;
     margin: 10px;
   }
+
+  #chat-messages > div > ul > li p a img {
+    min-width: 275px;
+    max-width: calc(90% - 200px);
+    max-height: calc(90% - 200px);
+  }
 `);
 
 const TRIGGER_NOT_FOUND_MESSAGES = [
   "Bless up. trigger not found: ",
   "Oops! Not a trigger: ",
-  "This trigger is single and looking: ",
+  "This trigger is single and looking to mingle: ",
   "/me wishes there was a trigger for: ",
   "I must be thinking of another trigger, not: ",
   "Not a trigger, bro: ",
@@ -107,6 +113,10 @@ jQuery(document).ready(function () {
       jQuery('#gif-search-container').toggle();
     })
   }
+
+  setInterval(function () {
+      checkAndConvertToEmbed();
+  }, 500);
 });
 
 // MAIN
@@ -152,7 +162,7 @@ jQuery(document).ready(function () {
     // Check if the Websocket Message is a "chat" client-to-server message
     if (data.substr(0, 2) == "42") {
       // Mp4 embedder
-      checkAndConvertToEmbed();
+      //checkAndConvertToEmbed();
       // Demoleuculariziation of the data
       var dataObj = JSON.parse(data.substr(2));
       if (dataObj.length > 1) {
@@ -200,6 +210,10 @@ jQuery(document).ready(function () {
               });
             // Not add/update, so try to GET the trigger val from Firebase
           } else if (!(dataObj[1].message.message.split(" ").length > 1)) {
+            // Easter egg TODO
+            if (triggerDocId == "mandalas") {
+              var random_int_0_to_30 = [0, 1, 2, 3].map(multiplyByRandom);
+            }
             // We need to fetch the trigger val from Firebase here so using await
             await db.collection("trigger_col").doc(triggerDocId).get().then(function (doc) {
               if (doc.exists) {
@@ -240,5 +254,19 @@ function checkAndConvertToEmbed() {
       var linkValue = linkEl.attr('href');
       jQuery('<p class="content"><video autoplay loop><source src="' + linkValue + '" type="video/mp4"/></video></p>').insertAfter('#chat-messages > div > ul > li:last-child p');
     }
-  }, 150);
+  }, 0);
+}
+
+function multiplyByRandom(n) {
+  return (n * Math.floor(Math.random() * 10));
+}
+
+function addGlobalStyle(css) {
+    var head, style;
+    head = document.getElementsByTagName('head')[0];
+    if (!head) { return; }
+    style = document.createElement('style');
+    style.type = 'text/css';
+    style.innerHTML = css;
+    head.appendChild(style);
 }
