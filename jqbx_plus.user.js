@@ -53,8 +53,25 @@ GM_addStyle(`
 
   #gif-search-input {
     background-color: black;
-    border-color: #CCC;
+    border-color: #333;
     margin: 10px;
+    color: white;
+    box-shadow: 2px 2px 2px #222121;
+    height: 50px;
+    width: 25%;
+    font-size: 22px;
+    padding-left: 10px;
+  }
+
+  #gif-search-results {
+    margin: 10px;
+    overflow-y: scroll;
+    height: 85%;
+  }
+
+  .tenor-preview {
+    padding-right: 10px;
+    padding-bottom: 10px;
   }
 
   #chat-messages > div > ul > li p a img {
@@ -65,7 +82,7 @@ GM_addStyle(`
 `);
 
 const TRIGGER_NOT_FOUND_MESSAGES = [
-  "Bless up. trigger not found: ",
+  "Bless up mon. Trigger not found: ",
   "Oops! Not a trigger: ",
   "This trigger is single and looking to mingle: ",
   "/me wishes there was a trigger for: ",
@@ -103,7 +120,8 @@ const db = firebase.firestore();
 jQuery(document).ready(function () {
   setTimeout(function () {
     jQuery("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
-    jQuery('#chat-messages').append('<div id="gif-search-container"><div id="gif-search-input"><input type="text"/></div></div>');
+    jQuery('#chat-messages').append('<div id="gif-search-container"><div><input id="gif-search-input" placeholder="Search Tenor..." type="text"/></div></div>');
+    jQuery('#gif-search-container').append('<div id="gif-search-results"></div>');
     handleGifSearch();
   }, 5000);
 
@@ -111,7 +129,71 @@ jQuery(document).ready(function () {
   function handleGifSearch() {
     jQuery('#tenor-btn').click(function () {
       jQuery('#gif-search-container').toggle();
-    })
+      jQuery('#gif-search-input').focus();
+    });
+
+    jQuery("#gif-search-input").on('keypress', function(e) {
+      var searchTerm;
+      if (e.which == 13) {
+        jQuery("#gif-search-results img").remove();
+        searchTerm = jQuery("#gif-search-input").val();
+        if (searchTerm.length > 1) {
+          fetchTenorData();
+          jQuery("#gif-search-input").val("");
+        }
+      }
+
+      function fetchTenorData() {
+        // set the apikey and limit
+        var TENOR_API_KEY = "XY0COUWVOGFK";
+        var limit = 50;
+
+        var searchUrl = "https://api.tenor.com/v1/search?q=" + searchTerm + "&key=" + TENOR_API_KEY + "&limit=" + limit;
+
+        httpGetAsync(searchUrl, tenorCallback_search);
+
+        // data will be loaded by each call's callback
+        return;
+      }
+
+      function httpGetAsync(theUrl, callback) {
+        // create the request object
+        var xmlHttp = new XMLHttpRequest();
+
+        // set the state change callback to capture when the response comes in
+        xmlHttp.onreadystatechange = function() {
+          if (xmlHttp.readyState == 4 && xmlHttp.status == 200) {
+            callback(xmlHttp.responseText);
+          }
+        }
+
+        // open as a GET call, pass in the url and set async = True
+        xmlHttp.open("GET", theUrl, true);
+
+        // call send with no params as they were passed in on the url string
+        xmlHttp.send(null);
+
+        return;
+      }
+
+      function tenorCallback_search(responsetext) {
+        // parse the json response
+        var data = JSON.parse(responsetext);
+
+        var results = data["results"];
+
+        results.forEach(obj => {
+          Object.entries(obj).forEach(([key, value]) => {
+            if (key == 'media') {
+              var newSrc = value[0]["nanogif"]["url"];
+              jQuery('#gif-search-results').append(`<img class="tenor-preview" src="${newSrc}" alt=""/>`);
+            }
+          });
+        });
+
+        return;
+      }
+    });
   }
 
   setInterval(function () {
