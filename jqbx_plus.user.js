@@ -119,7 +119,7 @@ const db = firebase.firestore();
 // Button stuff
 jQuery(document).ready(function () {
   setTimeout(function () {
-    jQuery("#chat-input-form").append('<button id="tenor-btn" type="submit">GIF</button>');
+    jQuery("#chat-input-form").append('<button id="tenor-btn">GIF</button>');
     jQuery('#chat-messages').append('<div id="gif-search-container"><div><input id="gif-search-input" placeholder="Search Tenor..." type="text"/></div></div>');
     jQuery('#gif-search-container').append('<div id="gif-search-results"></div>');
     handleGifSearch();
@@ -186,10 +186,17 @@ jQuery(document).ready(function () {
           Object.entries(obj).forEach(([key, value]) => {
             if (key == 'media') {
               var newSrc = value[0]["nanogif"]["url"];
-              jQuery('#gif-search-results').append(`<img class="tenor-preview" src="${newSrc}" alt=""/>`);
+              var hqSrc = value[0]["tinygif"]["url"];
+              jQuery('#gif-search-results').append(`<img class="tenor-preview" src="${newSrc}" data-hqsrc="${hqSrc}" alt=""/>`);
             }
           });
         });
+
+          jQuery("#gif-search-results img").on('click', function(e) {
+            // What do we do here?
+            // You can get the URL to share with this.dataset.hqsrc
+            console.log(this.dataset.hqsrc);
+          });
 
         return;
       }
