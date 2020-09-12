@@ -4,7 +4,7 @@
 // @author          braincomb, fractaldroid
 // @homepageURL     https://github.com/fractaldroid/jqbx-plus
 // @namespace       https://github.com/fractaldroid/jqbx-plus
-// @version         0.1.0
+// @version         0.1.2
 // @include         http*://app.jqbx.fm/room/*
 // @require         https://code.jquery.com/jquery-2.1.4.min.js
 // @require         https://www.gstatic.com/firebasejs/7.17.1/firebase-app.js
@@ -180,13 +180,13 @@ jQuery(document).ready(function () {
         // parse the json response
         var data = JSON.parse(responsetext);
 
-        var results = data["results"];
+        var results = data.results;
 
         results.forEach(obj => {
           Object.entries(obj).forEach(([key, value]) => {
             if (key == 'media') {
-              var newSrc = value[0]["nanogif"]["url"];
-              var hqSrc = value[0]["tinygif"]["url"];
+              var newSrc = value[0]['nanogif']['url'];
+              var hqSrc = value[0]['tinygif']['url'];
               jQuery('#gif-search-results').append(`<img class="tenor-preview" src="${newSrc}" data-hqsrc="${hqSrc}" alt=""/>`);
             }
           });
