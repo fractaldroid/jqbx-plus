@@ -17,7 +17,7 @@
   },
   "homepage": "https://github.com/fractaldroid/jqbx-plus#readme",
   "dependencies": {
-    "node-fetch": "^2.6.0",
+    "node-fetch": "^2.6.1",
     "request": "^2.88.2",
     "request-promise": "^4.2.5",
     "url-exists": "^1.0.3"
